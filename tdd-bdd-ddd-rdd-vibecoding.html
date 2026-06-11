@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TDD · BDD · DDD · RDD para vibe coding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16131F; --ink-2:#1C1828; --surface:#231D33; --surface-2:#2A2340;
+    --line:#352C4B; --text:#F4F1FA; --muted:#A79DB8;
+    --amber:#FFB454; --teal:#54E5C8; --rose:#F18A78; --violet:#B9A0FF;
+    --display:'Space Grotesk',sans-serif; --body:'Hanken Grotesk',sans-serif; --mono:'Space Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--body);background:var(--ink);color:var(--text);
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.5}
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(55vw 55vw at 88% -12%, rgba(255,180,84,.09), transparent 60%),
+      radial-gradient(50vw 50vw at -10% 112%, rgba(185,160,255,.08), transparent 60%)}
+
+  .progress{position:fixed;left:0;top:0;height:3px;width:0;background:var(--amber);
+    z-index:60;box-shadow:0 0 14px rgba(255,180,84,.6);transition:width .1s linear}
+
+  /* top bar */
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:50;
+    display:flex;align-items:center;gap:18px;justify-content:space-between;
+    padding:12px clamp(18px,4vw,46px);
+    background:rgba(22,19,31,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .wordmark{font-family:var(--mono);font-weight:700;font-size:14px;display:flex;align-items:center;gap:2px;flex:none}
+  .wordmark .br{color:var(--amber)}
+  .pills{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;
+    border:1px solid var(--line);background:transparent;color:var(--muted);
+    border-radius:999px;padding:5px 12px;cursor:pointer;white-space:nowrap;transition:all .2s}
+  .pill:hover{color:var(--text)}
+  .pill.active{color:var(--ink);background:var(--pc);border-color:var(--pc)}
+  .lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;
+    font-family:var(--mono);font-size:12px;font-weight:700;flex:none}
+  .lang button{background:transparent;color:var(--muted);border:0;cursor:pointer;padding:6px 11px;letter-spacing:.06em;transition:all .2s}
+  .lang button.active{background:var(--amber);color:#1a1206}
+  .lang button:not(.active):hover{color:var(--text)}
+
+  /* layout */
+  main{position:relative;z-index:5;max-width:980px;margin:0 auto;padding:0 clamp(20px,5vw,40px)}
+  section{scroll-margin-top:72px;padding:clamp(48px,7vh,84px) 0}
+  .hero{padding-top:clamp(110px,16vh,150px)}
+  .eyebrow{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--amber);margin-bottom:18px}
+  h1{font-family:var(--display);font-weight:700;line-height:1.02;letter-spacing:-.02em;
+    font-size:clamp(38px,8vw,82px);display:flex;flex-wrap:wrap;gap:.18em;align-items:center}
+  h1 .sep{color:var(--muted);font-weight:400}
+  h1 .tdd{color:var(--rose)} h1 .bdd{color:var(--teal)} h1 .ddd{color:var(--amber)} h1 .rdd{color:var(--violet)}
+  .lede{margin-top:22px;font-size:clamp(17px,2.3vw,23px);color:var(--text);max-width:40ch}
+  .frame{margin-top:18px;font-size:clamp(15px,1.9vw,18px);color:var(--muted);max-width:60ch}
+  .frame b{color:var(--text);font-weight:600}
+
+  /* map table */
+  .maptitle{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 14px}
+  .map{width:100%;border-collapse:collapse;font-size:clamp(13px,1.55vw,15px)}
+  .map th{font-family:var(--mono);font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    font-size:11px;color:var(--muted);text-align:left;padding:0 14px 10px;border-bottom:1px solid var(--line)}
+  .map td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  .map .m{font-family:var(--mono);font-weight:700}
+  .map tr:nth-child(1) .m{color:var(--rose)} .map tr:nth-child(2) .m{color:var(--teal)}
+  .map tr:nth-child(3) .m{color:var(--amber)} .map tr:nth-child(4) .m{color:var(--violet)}
+  .map .q{font-style:italic;color:var(--muted)}
+  .map .p{font-family:var(--mono);color:var(--text)}
+  .map-scroll{overflow-x:auto}
+
+  /* method section */
+  .method{border-top:1px solid var(--line)}
+  .m-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+  .m-acc{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,46px);color:var(--acc);letter-spacing:-.01em}
+  .m-full{font-family:var(--mono);font-size:clamp(13px,1.6vw,16px);color:var(--muted);font-weight:700;letter-spacing:.02em}
+  .m-essence{font-size:clamp(17px,2.2vw,22px);font-weight:600;line-height:1.35;max-width:42ch;margin:6px 0 26px;color:var(--text)}
+  .m-essence::before{content:"";display:inline-block;width:26px;height:3px;background:var(--acc);
+    vertical-align:middle;margin-right:12px;border-radius:2px}
+
+  .m-diagram{background:var(--ink-2);border:1px solid var(--line);border-radius:18px;
+    padding:24px;margin-bottom:28px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .diag-cap{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+
+  .m-block{margin:18px 0}
+  .m-label{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--acc);margin-bottom:6px}
+  .m-text{font-size:clamp(15px,1.85vw,17.5px);color:var(--text);max-width:64ch}
+  .m-text b{color:var(--text);font-weight:700}
+  .m-text code{font-family:var(--mono);font-size:.9em;background:var(--surface);padding:1px 6px;border-radius:5px;color:var(--acc)}
+
+  .m-prompt{margin:24px 0 16px;background:var(--surface);border:1px solid var(--line);
+    border-left:4px solid var(--acc);border-radius:0 12px 12px 0;padding:14px 16px}
+  .m-prompt .pc{font-family:var(--mono);font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--acc);margin-bottom:7px;display:flex;align-items:center;gap:7px}
+  .m-prompt .pc::before{content:"›";font-size:15px}
+  .m-prompt .pt{font-family:var(--body);font-size:clamp(15px,1.9vw,17.5px);line-height:1.6;color:var(--text)}
+  .m-prompt .pt .k{color:var(--acc);font-weight:700}
+  .m-prompt .pt .flow-status{font-family:var(--mono);font-size:.9em;color:var(--muted)}
+  .m-note{font-size:clamp(14px,1.7vw,16px);color:var(--muted);max-width:64ch;line-height:1.5}
+  .m-note b{color:var(--text);font-weight:600}
+
+  /* diagrams: BDD gherkin */
+  .gherkin{font-family:var(--mono);font-size:clamp(12px,1.5vw,14.5px);line-height:1.7;width:100%;max-width:460px}
+  .gherkin .kw{color:var(--teal);font-weight:700}
+  .gherkin .sc{color:var(--muted)}
+  /* DDD contexts */
+  .ubiq{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:6px}
+  .chip{font-family:var(--mono);font-size:12px;border:1px solid var(--amber);color:var(--amber);
+    border-radius:999px;padding:3px 11px;background:rgba(255,180,84,.07)}
+  .ctxrow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+  .ctx{border:1.5px dashed var(--amber);border-radius:12px;padding:12px 18px;text-align:center;min-width:104px}
+  .ctx .cn{font-family:var(--display);font-weight:700;font-size:16px;color:var(--text)}
+  .ctx .cl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.05em;margin-top:2px}
+  /* RDD flow */
+  .flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;justify-content:center}
+  .step{border:1px solid var(--line);border-radius:12px;padding:13px 16px;text-align:center;min-width:128px;background:var(--surface)}
+  .step.first{border-color:var(--violet);box-shadow:0 0 0 1px var(--violet) inset}
+  .step .si{font-size:20px}
+  .step .st{font-family:var(--mono);font-weight:700;font-size:13px;margin-top:4px;color:var(--text)}
+  .step .ss{font-size:12px;color:var(--muted);margin-top:2px}
+  .flow .ar{display:flex;align-items:center;color:var(--violet);font-weight:700;font-size:20px}
+
+  /* synthesis */
+  .synth{border-top:1px solid var(--line)}
+  .stack{margin:24px 0}
+  .layer{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:12px;
+    background:var(--ink-2);border:1px solid var(--line);border-left:4px solid var(--lc);margin-bottom:10px}
+  .layer .lk{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--lc);flex:none;min-width:46px}
+  .layer .lt{font-size:clamp(14px,1.75vw,17px)}
+  .layer .lt b{font-weight:700}
+  .layer .lt .tag{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:6px}
+  .arrow-down{text-align:center;color:var(--muted);font-size:18px;margin:2px 0}
+  .synth-out{font-size:clamp(15px,1.9vw,18px);color:var(--text);margin-top:6px}
+  .synth-out b{color:var(--amber)}
+  .rule{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;font-size:clamp(15px,1.85vw,17px);line-height:1.55}
+  .rule .rl{font-family:var(--mono);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--amber);display:block;margin-bottom:8px}
+  .rule b{color:var(--text);font-weight:700}
+
+  footer{border-top:1px solid var(--line);padding:30px 0 60px;color:var(--muted);
+    font-family:var(--mono);font-size:12px;text-align:center}
+
+  :focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:6px}
+
+  @media (max-width:680px){
+    .m-essence::before{display:none}
+    h1{font-size:clamp(34px,12vw,56px)}
+    .flow .ar{transform:rotate(90deg)}
+  }
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important}}
+</style>
+</head>
+<body>
+  <div class="progress" id="bar"></div>
+  <header class="topbar">
+    <div class="wordmark">vibe<span class="br">.</span>coding</div>
+    <div class="pills" id="pills"></div>
+    <div class="lang" role="group" aria-label="Idioma / Language">
+      <button id="pt" class="active" onclick="setLang('pt')">PT</button>
+      <button id="en" onclick="setLang('en')">EN</button>
+    </div>
+  </header>
+
+  <main id="main"></main>
+
+<script>
+const C = {
+  whatIs:["O que é","What it is"],
+  howWorks:["Como funciona","How it works"],
+  inVibe:["No vibe coding","In vibe coding"],
+  prompt:["vira prompt assim","becomes a prompt like"],
+};
+
+const METHODS = [
+  {
+    id:"tdd", acc:"var(--rose)",
+    full:["Test-Driven Development — Guiado por Testes","Test-Driven Development"],
+    essence:["Escreva o teste antes do código. O teste define o que “pronto” significa.",
+             "Write the test before the code. The test defines what “done” means."],
+    diagram:"tdd",
+    diagCap:["o ciclo Red → Green → Refactor","the Red → Green → Refactor cycle"],
+    what:["Você escreve um teste que <b>falha</b> antes de existir a implementação. O código nasce só pra fazer esse teste passar. Na prática, o teste vira uma especificação executável: ele descreve, em código, o comportamento esperado.",
+          "You write a test that <b>fails</b> before the implementation exists. The code is born only to make that test pass. In practice, the test becomes an executable spec: it describes the expected behavior, in code."],
+    how:["Em ciclos curtos: <b>Red</b> — escreve um teste pequeno que falha. <b>Green</b> — escreve o mínimo de código pra ele passar. <b>Refactor</b> — limpa o código sem quebrar o teste. Repete.",
+         "In short cycles: <b>Red</b> — write a small failing test. <b>Green</b> — write the minimum code to pass it. <b>Refactor</b> — clean the code without breaking the test. Repeat."],
+    vibe:["O teste é a sua coleira na IA. <b>Você</b> é dono do teste (escreve ou revisa com lupa); a IA implementa até ficar verde. Assim você <b>verifica em vez de inspecionar</b> linha por linha. O perigo: deixar a IA escrever código <i>e</i> teste sozinha — ela escreve teste que passa por construção, sem provar nada.",
+          "The test is your leash on the AI. <b>You</b> own the test (write it, or review it closely); the AI implements until it's green. That way you <b>verify instead of inspecting</b> line by line. The trap: letting the AI write both code <i>and</i> test — it'll write a test that passes by construction, proving nothing."],
+    promptText:["Quero uma função que calcula o total do pedido. <span class='k'>Antes de implementar, escreva os testes</span> e me mostre pra eu aprovar. As regras: o total é a soma dos itens mais a taxa de entrega, e um cupom de 10% desconta só os itens — por exemplo, 2 itens de R$ 25,90 + 1 de R$ 12 com taxa de R$ 7,50 e cupom de 10% deve dar <span class='k'>R$ 64,92</span>. Cubra também pedido sem cupom, cupom que zera a taxa e pedido abaixo do mínimo (que deve dar erro). Só depois implemente até os testes passarem.",
+                "I want a function that calculates the order total. <span class='k'>Before implementing, write the tests</span> and show them to me to approve. The rules: the total is the sum of the items plus the delivery fee, and a 10% coupon discounts only the items — e.g., 2 items at $25.90 + 1 at $12 with a $7.50 fee and a 10% coupon should give <span class='k'>$64.92</span>. Also cover an order with no coupon, a coupon that zeroes the fee, and an order below the minimum (which must error). Only then implement until the tests pass."],
+    note:["<b>Bom pra:</b> lógica com regras claras e críticas — cálculo, validação, parsing. <b>Cuidado:</b> testar UI ou integrações instáveis com TDD puro vira mais atrito que valor.",
+          "<b>Good for:</b> logic with clear, critical rules — calculation, validation, parsing. <b>Watch out:</b> testing UI or flaky integrations with pure TDD becomes more friction than value."]
+  },
+  {
+    id:"bdd", acc:"var(--teal)",
+    full:["Behavior-Driven Development — Guiado por Comportamento","Behavior-Driven Development"],
+    essence:["Descreva o comportamento em linguagem que qualquer um entende: Dado / Quando / Então.",
+             "Describe behavior in language anyone understands: Given / When / Then."],
+    diagram:"bdd",
+    diagCap:["um cenário em linguagem quase natural","a scenario in near-natural language"],
+    what:["Uma evolução do TDD que sobe o nível: em vez de testar funções, descreve o <b>comportamento do ponto de vista de quem usa</b>, em linguagem quase natural (Gherkin). Aproxima dev, produto e cliente num vocabulário só.",
+          "An evolution of TDD that raises the level: instead of testing functions, it describes <b>behavior from the user's point of view</b>, in near-natural language (Gherkin). It puts dev, product and client on a single vocabulary."],
+    how:["Você escreve cenários no formato <b>Dado</b> (o contexto) / <b>Quando</b> (a ação) / <b>Então</b> (o resultado esperado). Cada cenário vira um teste de aceitação automatizável (Cucumber e afins).",
+         "You write scenarios as <b>Given</b> (context) / <b>When</b> (action) / <b>Then</b> (expected result). Each scenario becomes an automatable acceptance test (Cucumber and friends)."],
+    vibe:["BDD é quase feito sob medida pra LLM: o cenário Dado/Quando/Então é, <b>ao mesmo tempo, o seu prompt e o seu critério de aceite</b>. Você descreve o comportamento em português; a IA implementa e os cenários verificam. É assim que, no papel de PM, você diz <b>o que</b> o sistema faz sem precisar dizer <b>como</b>.",
+          "BDD is almost tailor-made for LLMs: the Given/When/Then scenario is <b>at once your prompt and your acceptance criteria</b>. You describe the behavior in plain language; the AI implements and the scenarios verify. That's how, as a PM, you say <b>what</b> the system does without dictating <b>how</b>."],
+    promptText:["Implemente o fluxo de finalizar pedido. Descreva o comportamento como cenários de aceitação no formato <span class='k'>dado / quando / então</span> e gere os testes a partir deles. Os casos: se o carrinho está acima do mínimo do restaurante, o pedido é criado com status “recebido” e o restaurante é notificado; se está abaixo do mínimo, o app mostra quanto falta e não cria o pedido.",
+                "Implement the checkout flow. Describe the behavior as acceptance scenarios in <span class='k'>given / when / then</span> form and generate the tests from them. The cases: if the cart is above the restaurant's minimum, the order is created with status “received” and the restaurant is notified; if it's below the minimum, the app shows how much is missing and doesn't create the order."],
+    note:["<b>TDD × BDD em uma linha:</b> TDD testa unidades (“essa função faz a conta certa?”); BDD testa comportamento (“o usuário consegue fazer login?”). Não escolha — use em camadas.",
+          "<b>TDD vs BDD in one line:</b> TDD tests units (“does this function compute right?”); BDD tests behavior (“can the user log in?”). Don't pick — layer them."]
+  },
+  {
+    id:"ddd", acc:"var(--amber)",
+    full:["Domain-Driven Design — Guiado pelo Domínio","Domain-Driven Design"],
+    essence:["Modele o software na linguagem do problema, não na do framework.",
+             "Model the software in the language of the problem, not the framework."],
+    diagram:"ddd",
+    diagCap:["linguagem ubíqua + contextos delimitados","ubiquitous language + bounded contexts"],
+    what:["Uma abordagem de <b>design</b> (de Eric Evans) em que o código espelha o domínio do negócio. Ideias-chave: <b>linguagem ubíqua</b> (código, dev e negócio usam os mesmos termos), <b>bounded contexts</b> (cada parte tem seu próprio modelo e limites) e blocos como entidades, value objects e agregados.",
+          "A <b>design</b> approach (from Eric Evans) where the code mirrors the business domain. Key ideas: <b>ubiquitous language</b> (code, devs and business use the same terms), <b>bounded contexts</b> (each part has its own model and limits) and blocks like entities, value objects and aggregates."],
+    how:["Você mapeia o domínio com quem entende do negócio, fixa <b>um vocabulário único</b> e divide o sistema em contextos delimitados, cada um dono do seu modelo. O código usa exatamente esses nomes.",
+         "You map the domain with the business experts, lock in <b>a single vocabulary</b>, and split the system into bounded contexts, each owning its model. The code uses exactly those names."],
+    vibe:["A linguagem ubíqua é, literalmente, <b>o glossário que você entrega pra IA</b>. Quando “Pedido”, “Entrega”, “Carrinho” significam a mesma coisa no prompt, no <code>ARCHITECTURE.md</code> e no código, a IA para de inventar nomes e conceitos conflitantes. Bounded contexts viram <b>fronteiras de módulo claras</b> — a IA trabalha num contexto sem vazar pro outro. DDD dá à IA um <b>mapa do território</b>.",
+          "The ubiquitous language is, literally, <b>the glossary you hand the AI</b>. When “Order”, “Delivery”, “Cart” mean the same thing in your prompt, in <code>ARCHITECTURE.md</code> and in the code, the AI stops inventing conflicting names and concepts. Bounded contexts become <b>clear module boundaries</b> — the AI works in one context without leaking into another. DDD gives the AI a <b>map of the territory</b>."],
+    promptText:["Use sempre este vocabulário no código (os mesmos nomes em classes, funções e tabelas): <span class='k'>Pedido</span> são os itens que um cliente escolhe num restaurante, com um status (recebido → em preparo → saiu para entrega → entregue); <span class='k'>Item de Cardápio</span> é o prato do restaurante, diferente do item do pedido; <span class='k'>Entrega</span> liga um pedido a um entregador. E respeite as fronteiras: o módulo de <span class='k'>Pagamentos</span> não mexe direto no banco do <span class='k'>Catálogo</span> — só recebe o total; o de <span class='k'>Entrega</span> não conhece preços, só endereços e status.",
+                "Always use this vocabulary in the code (the same names in classes, functions and tables): <span class='k'>Order</span> is the items a customer picks at a restaurant, with a status (received → preparing → out for delivery → delivered); <span class='k'>Menu Item</span> is the restaurant's dish, different from the order item; <span class='k'>Delivery</span> links an order to a courier. And respect the boundaries: the <span class='k'>Payments</span> module doesn't touch the <span class='k'>Catalog</span> database directly — it only receives the total; the <span class='k'>Delivery</span> module knows no prices, only addresses and status."],
+    note:["<b>Cuidado:</b> DDD completo é overkill pra projeto pequeno; em CRUD simples a cerimônia não compensa. Pegue o que serve — <b>linguagem ubíqua e fronteiras quase sempre valem</b>; agregados e event sourcing só quando a complexidade do domínio pedir.",
+          "<b>Watch out:</b> full DDD is overkill for a small project; on simple CRUD the ceremony doesn't pay off. Take what helps — <b>ubiquitous language and boundaries almost always do</b>; aggregates and event sourcing only when the domain's complexity demands it."]
+  },
+  {
+    id:"rdd", acc:"var(--violet)",
+    full:["Readme-Driven Development — Guiado pela Documentação","Readme-Driven Development"],
+    essence:["Escreva o README antes do código. Se não dá pra explicar o uso, não dá pra construir.",
+             "Write the README before the code. If you can't explain the usage, you can't build it."],
+    diagram:"rdd",
+    diagCap:["o README vem primeiro, o código depois","the README comes first, the code after"],
+    what:["Proposta por Tom Preston-Werner (cofundador do GitHub). Você escreve o <b>README primeiro</b> — nome, o que faz, como se usa, qual a API — <b>antes</b> de implementar. Projeta a interface e a experiência do ponto de vista de quem vai consumir. <span class='aside'>(“RDD” às vezes também é Responsibility-Driven Design; aqui usamos Readme-Driven, que conversa direto com o fluxo de IA.)</span>",
+          "Proposed by Tom Preston-Werner (GitHub co-founder). You write the <b>README first</b> — name, what it does, how it's used, the API — <b>before</b> implementing. You design the interface and experience from the consumer's point of view. <span class='aside'>(“RDD” sometimes also means Responsibility-Driven Design; here we use Readme-Driven, which speaks directly to the AI workflow.)</span>"],
+    how:["Três passos: <b>1)</b> escreve o README com o uso desejado; <b>2)</b> ajusta até a interface ficar boa no papel; <b>3)</b> só então implementa pra cumprir o que o README promete. O documento é a fonte da verdade.",
+         "Three steps: <b>1)</b> write the README with the desired usage; <b>2)</b> refine it until the interface reads well on paper; <b>3)</b> only then implement to fulfill what the README promises. The document is the source of truth."],
+    vibe:["Isso é praticamente o <b>“spec-first”</b> do nosso mundo. O README é, ao mesmo tempo, o <b>design da interface</b> e o <b>briefing da IA</b>: você escreve como quer usar a coisa (<code>pedidos.criar(carrinho, endereco)</code> retorna o pedido com total e status…) e a IA implementa pra bater exatamente com isso. Projetar a API antes evita aquele código que “funciona” mas tem uma interface horrível que você só descobre tarde demais.",
+          "This is basically the <b>“spec-first”</b> of our world. The README is at once the <b>interface design</b> and the <b>AI brief</b>: you write how you want to use the thing (<code>orders.create(cart, address)</code> returns the order with total and status…) and the AI implements to match it exactly. Designing the API first avoids that code that “works” but has a horrible interface you only discover too late."],
+    promptText:["Antes de programar, escreva o <span class='k'>README</span> da API de pedidos: como eu crio um pedido (passando cliente, restaurante, itens, endereço e forma de pagamento) e o que recebo de volta (id, status e total), e como acompanho a mudança de status em tempo real. Quando o README estiver bom, implemente o serviço pra funcionar <span class='k'>exatamente como ele descreve</span>.",
+                "Before coding, write the <span class='k'>README</span> for the orders API: how I create an order (passing customer, restaurant, items, address and payment method) and what I get back (id, status and total), and how I follow status changes in real time. Once the README looks good, implement the service to work <span class='k'>exactly as it describes</span>."],
+    note:["<b>Bom pra:</b> bibliotecas, APIs, qualquer coisa com interface pública — e como hábito geral de vibe coding: <b>spec antes de implementar</b>.",
+          "<b>Good for:</b> libraries, APIs, anything with a public interface — and as a general vibe-coding habit: <b>spec before implementing</b>."]
+  },
+];
+
+let lang="pt";
+const main=document.getElementById("main");
+const pills=document.getElementById("pills");
+
+function L(node,pair){node.classList.add("i18n");node.dataset.pt=pair[0];node.dataset.en=pair[1];return node;}
+function LT(node,pair){node.classList.add("i18n-t");node.dataset.pt=pair[0];node.dataset.en=pair[1];return node;}
+function E(t,c){const e=document.createElement(t);if(c)e.className=c;return e;}
+
+/* ---------- hero ---------- */
+const hero=E("section","hero");
+hero.id="top";
+hero.appendChild(L(E("div","eyebrow"),["os quatro “-Driven” que viram prompt","the four “-Driven” methods that become prompts"]));
+const h1=E("h1");
+h1.innerHTML='<span class="tdd">TDD</span><span class="sep">·</span><span class="bdd">BDD</span><span class="sep">·</span><span class="ddd">DDD</span><span class="sep">·</span><span class="rdd">RDD</span>';
+hero.appendChild(h1);
+hero.appendChild(L(E("p","lede"),
+  ["Quatro métodos pra dar direção ao código — e por que cada um vira ouro quando a IA implementa pra você.",
+   "Four methods for steering your code — and why each becomes gold when the AI does the implementing."]));
+hero.appendChild(L(E("p","frame"),
+  ["Todos terminam em <b>-Driven</b>: alguma coisa guia o código. A pergunta é — guiado por quê? E no vibe coding isso pesa: <b>o que guia o seu design vira o briefing da IA</b>.",
+   "They all end in <b>-Driven</b>: something steers the code. The question is — driven by what? And in vibe coding that matters: <b>whatever steers your design becomes the AI's brief</b>."]));
+
+/* map */
+const mapSec=E("div");
+mapSec.style.marginTop="40px";
+mapSec.appendChild(L(E("p","maptitle"),["Os quatro num relance","The four at a glance"]));
+const scroll=E("div","map-scroll");
+const tbl=E("table","map");
+const thead=E("thead");
+const htr=E("tr");
+[["Método","Method"],["Guiado por","Driven by"],["Pergunta-chave","Key question"],["Vira prompt assim","Becomes a prompt like"]]
+  .forEach(p=>{const th=E("th");L(th,p);htr.appendChild(th);});
+thead.appendChild(htr);tbl.appendChild(thead);
+const tb=E("tbody");
+const ROWS=[
+  ["TDD",["testes","tests"],["“tá correto?”","“is it correct?”"],["“descreva o teste do total e implemente até passar”","“describe the total test and implement until it passes”"]],
+  ["BDD",["comportamento","behavior"],["“o usuário consegue?”","“can the user do it?”"],["“satisfaça os cenários de finalizar pedido”","“satisfy the checkout scenarios”"]],
+  ["DDD",["domínio","the domain"],["“falamos a mesma língua?”","“do we speak the same language?”"],["“use este vocabulário (Pedido, Entrega…) e as fronteiras”","“use this vocabulary (Order, Delivery…) and the boundaries”"]],
+  ["RDD",["documentação","the docs"],["“como se usa?”","“how is it used?”"],["“implemente pra este README da API de pedidos funcionar”","“implement so this Orders API README works”"]],
+];
+ROWS.forEach(r=>{
+  const tr=E("tr");
+  const m=E("td","m");m.textContent=r[0];tr.appendChild(m);
+  const d=E("td");L(d,r[1]);tr.appendChild(d);
+  const q=E("td","q");L(q,r[2]);tr.appendChild(q);
+  const p=E("td","p");L(p,r[3]);tr.appendChild(p);
+  tb.appendChild(tr);
+});
+tbl.appendChild(tb);scroll.appendChild(tbl);mapSec.appendChild(scroll);
+hero.appendChild(mapSec);
+main.appendChild(hero);
+
+/* ---------- diagrams ---------- */
+function diagram(kind){
+  const wrap=E("div","m-diagram");
+  if(kind==="tdd"){
+    const R="#F18A78";
+    const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("viewBox","0 0 440 210");svg.setAttribute("width","100%");svg.style.maxWidth="430px";
+    svg.innerHTML=`
+      <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="${R}"/></marker></defs>
+      <path d="M150,52 A150,150 0 0 1 290,52" fill="none" stroke="${R}" stroke-width="2" marker-end="url(#ah)" opacity=".8"/>
+      <path d="M330,80 A150,150 0 0 1 250,168" fill="none" stroke="${R}" stroke-width="2" marker-end="url(#ah)" opacity=".8"/>
+      <path d="M190,170 A150,150 0 0 1 110,82" fill="none" stroke="${R}" stroke-width="2" marker-end="url(#ah)" opacity=".8"/>
+      <circle cx="120" cy="58" r="11" fill="${R}"/>
+      <circle cx="320" cy="58" r="11" fill="#54E5C8"/>
+      <circle cx="220" cy="172" r="11" fill="#FFB454"/>
+      <text x="120" y="34" text-anchor="middle" fill="#F4F1FA" font-family="Space Grotesk" font-weight="700" font-size="16">Red</text>
+      <text x="320" y="34" text-anchor="middle" fill="#F4F1FA" font-family="Space Grotesk" font-weight="700" font-size="16">Green</text>
+      <text x="220" y="202" text-anchor="middle" fill="#F4F1FA" font-family="Space Grotesk" font-weight="700" font-size="16">Refactor</text>`;
+    const s1=document.createElementNS("http://www.w3.org/2000/svg","text");
+    s1.setAttribute("x","120");s1.setAttribute("y","90");s1.setAttribute("text-anchor","middle");
+    s1.setAttribute("fill","#A79DB8");s1.setAttribute("font-family","Space Mono");s1.setAttribute("font-size","11");
+    LT(s1,["teste falha","test fails"]);
+    const s2=s1.cloneNode();s2.setAttribute("x","320");LT(s2,["faz passar","make it pass"]);
+    const s3=s1.cloneNode();s3.setAttribute("x","220");s3.setAttribute("y","156");LT(s3,["limpa o código","clean it up"]);
+    svg.appendChild(s1);svg.appendChild(s2);svg.appendChild(s3);
+    wrap.appendChild(svg);
+  }
+  else if(kind==="bdd"){
+    const g=E("div","gherkin");
+    L(g,[
+      `<span class="sc">Cenário:</span> login com sucesso\n  <span class="kw">Dado</span>   que estou na tela de login\n  <span class="kw">Quando</span> informo email e senha válidos\n  <span class="kw">Então</span>  vejo o dashboard`,
+      `<span class="sc">Scenario:</span> successful login\n  <span class="kw">Given</span> I am on the login screen\n  <span class="kw">When</span>  I enter a valid email and password\n  <span class="kw">Then</span>  I see the dashboard`
+    ]);
+    g.style.whiteSpace="pre";
+    wrap.appendChild(g);
+  }
+  else if(kind==="ddd"){
+    const u=E("div","ubiq");
+    [["Pedido","Order"],["Cliente","Customer"],["Reserva","Reservation"],["Pagamento","Payment"]]
+      .forEach(p=>{const c=E("span","chip");L(c,p);u.appendChild(c);});
+    wrap.appendChild(u);
+    const row=E("div","ctxrow");
+    [[["Vendas","Sales"]],[["Estoque","Inventory"]],[["Pagamentos","Payments"]]].forEach(p=>{
+      const c=E("div","ctx");
+      const cn=E("div","cn");L(cn,p[0]);c.appendChild(cn);
+      const cl=E("div","cl");LT(cl,["bounded context","bounded context"]);c.appendChild(cl);
+      row.appendChild(c);
+    });
+    wrap.appendChild(row);
+  }
+  else if(kind==="rdd"){
+    const f=E("div","flow");
+    const steps=[
+      {i:"📄",first:true,t:["README","README"],s:["escreve o uso primeiro","write the usage first"]},
+      {i:"✓",t:["exemplos","examples"],s:["ajusta a interface","refine the interface"]},
+      {i:"</>",t:["código","code"],s:["implementa pra cumprir","build to fulfill it"]},
+    ];
+    steps.forEach((st,k)=>{
+      const s=E("div","step"+(st.first?" first":""));
+      const si=E("div","si");si.textContent=st.i;s.appendChild(si);
+      const t=E("div","st");L(t,st.t);s.appendChild(t);
+      const ss=E("div","ss");L(ss,st.s);s.appendChild(ss);
+      f.appendChild(s);
+      if(k<steps.length-1){const a=E("div","ar");a.textContent="→";f.appendChild(a);}
+    });
+    wrap.appendChild(f);
+  }
+  const cap=E("div","diag-cap");wrap._cap=cap;
+  return {wrap,cap};
+}
+
+/* ---------- method sections ---------- */
+METHODS.forEach(m=>{
+  const sec=E("section","method");sec.id=m.id;sec.style.setProperty("--acc",m.acc);
+  const head=E("div","m-head");
+  const acc=E("div","m-acc");acc.textContent=m.id.toUpperCase();head.appendChild(acc);
+  head.appendChild(L(E("div","m-full"),m.full));
+  sec.appendChild(head);
+  sec.appendChild(L(E("p","m-essence"),m.essence));
+
+  const d=diagram(m.diagram);
+  L(d.cap,m.diagCap);d.wrap.appendChild(d.cap);
+  sec.appendChild(d.wrap);
+
+  [["whatIs","what"],["howWorks","how"],["inVibe","vibe"]].forEach(pair=>{
+    const b=E("div","m-block");
+    b.appendChild(L(E("div","m-label"),C[pair[0]]));
+    b.appendChild(L(E("p","m-text"),m[pair[1]]));
+    sec.appendChild(b);
+  });
+
+  const pr=E("div","m-prompt");
+  pr.appendChild(L(E("div","pc"),C.prompt));
+  pr.appendChild(L(E("div","pt"),m.promptText));
+  sec.appendChild(pr);
+
+  sec.appendChild(L(E("p","m-note"),m.note));
+  main.appendChild(sec);
+});
+
+/* ---------- synthesis ---------- */
+const syn=E("section","synth");syn.id="juntando";
+syn.appendChild(L(E("div","eyebrow"),["juntando tudo","putting it together"]));
+const sh=E("h2");sh.className="";sh.style.cssText="font-family:var(--display);font-weight:700;font-size:clamp(28px,4.6vw,46px);letter-spacing:-.015em;line-height:1.05";
+L(sh,["Os quatro não competem — empilham","The four don't compete — they stack"]);
+syn.appendChild(sh);
+syn.appendChild(L(E("p","frame"),
+  ["Um fluxo maduro de vibe coding usa os quatro em camadas, do mais amplo ao mais preciso:",
+   "A mature vibe-coding flow uses all four in layers, from broadest to most precise:"]));
+const stack=E("div","stack");
+const LAYERS=[
+  {c:"var(--violet)",k:"RDD",t:["escreve o README/spec: o que é e como se usa","write the README/spec: what it is and how it's used"],tag:["o quê","the what"]},
+  {c:"var(--amber)",k:"DDD",t:["fixa a linguagem do domínio e as fronteiras","lock in the domain language and the boundaries"],tag:["a estrutura","the structure"]},
+  {c:"var(--teal)",k:"BDD",t:["descreve o comportamento em cenários Dado/Quando/Então","describe the behavior as Given/When/Then scenarios"],tag:["o aceite","the acceptance"]},
+  {c:"var(--rose)",k:"TDD",t:["testa a lógica crítica, unidade por unidade","test the critical logic, unit by unit"],tag:["a precisão","the precision"]},
+];
+LAYERS.forEach((ly,k)=>{
+  const row=E("div","layer");row.style.setProperty("--lc",ly.c);
+  const lk=E("div","lk");lk.textContent=ly.k;row.appendChild(lk);
+  const lt=E("div","lt");
+  const span=E("span");L(span,ly.t);lt.appendChild(span);
+  const tag=E("span","tag");L(tag,["· "+ly.tag[0],"· "+ly.tag[1]]);lt.appendChild(tag);
+  row.appendChild(lt);stack.appendChild(row);
+  if(k<LAYERS.length-1){const ad=E("div","arrow-down");ad.textContent="↓";stack.appendChild(ad);}
+});
+syn.appendChild(stack);
+syn.appendChild(L(E("p","synth-out"),
+  ["<b>→ A IA implementa contra tudo isso.</b> Você revisa e aprova.",
+   "<b>→ The AI implements against all of it.</b> You review and approve."]));
+const rule=E("div","rule");
+rule.appendChild(L(E("span","rl"),["na prática","in practice"]));
+rule.appendChild(L(E("div"),
+  ["Comece pelo <b>README (RDD)</b> e pelos <b>cenários (BDD)</b> — são os que viram prompt na hora. Puxe <b>DDD</b> quando o domínio fica complexo, e <b>TDD</b> onde um bug sairia caro. Não precisa dos quatro em tudo: pegue a camada que o problema pede.",
+   "Start with the <b>README (RDD)</b> and the <b>scenarios (BDD)</b> — they turn into prompts instantly. Pull in <b>DDD</b> when the domain gets complex, and <b>TDD</b> where a bug would be costly. You don't need all four everywhere: take the layer the problem calls for."]));
+syn.appendChild(rule);
+main.appendChild(syn);
+
+const foot=E("footer");
+L(foot,["Material da disciplina · você dirige, a IA implementa","Course material · you steer, the AI implements"]);
+main.appendChild(foot);
+
+/* ---------- nav pills ---------- */
+METHODS.forEach(m=>{
+  const b=E("button","pill");b.textContent=m.id.toUpperCase();
+  b.style.setProperty("--pc",m.acc);b.dataset.target=m.id;
+  b.onclick=()=>document.getElementById(m.id).scrollIntoView();
+  pills.appendChild(b);
+});
+const pillEls=[...pills.children];
+
+/* ---------- i18n ---------- */
+function applyLang(){
+  document.querySelectorAll(".i18n").forEach(n=>n.innerHTML=n.dataset[lang]);
+  document.querySelectorAll(".i18n-t").forEach(n=>n.textContent=n.dataset[lang]);
+}
+function setLang(l){
+  if(l===lang)return;
+  lang=l;document.documentElement.lang=l;
+  document.getElementById("pt").classList.toggle("active",l==="pt");
+  document.getElementById("en").classList.toggle("active",l==="en");
+  applyLang();
+}
+applyLang();
+
+/* aside styling injected */
+const st=document.createElement("style");
+st.textContent=".aside{display:block;margin-top:8px;font-size:.82em;color:var(--muted);font-style:italic}";
+document.head.appendChild(st);
+
+/* ---------- scroll wiring ---------- */
+const io=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      pillEls.forEach(p=>p.classList.toggle("active",p.dataset.target===e.target.id));
+    }
+  });
+},{rootMargin:"-45% 0px -50% 0px"});
+METHODS.forEach(m=>io.observe(document.getElementById(m.id)));
+
+const bar=document.getElementById("bar");
+function onScroll(){const d=document.documentElement;const max=d.scrollHeight-d.clientHeight;
+  bar.style.width=(max>0?d.scrollTop/max*100:0)+"%";}
+document.addEventListener("scroll",onScroll,{passive:true});onScroll();
+</script>
+</body>
+</html>
